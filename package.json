@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/mtrifonov-design"
   },
-  "version": "0.0.0",
+  "version": "0.0.9",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -66,7 +66,6 @@
     "react-error-boundary": "^4.0.13"
   },
   "peerDependencies": {
-    "@mtrifonov-design/pinsandcurves-external": "^0.0.222",
     "react": "^18.3.1 || ^19.0.0"
   }
 }

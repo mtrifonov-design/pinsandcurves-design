@@ -9,12 +9,13 @@ function Icon({
     hoverColor= "var(--gray7)",
     cursor = "pointer",
     onClick = () => {},
+    style={},
 }) {
     const [hover, setHover] = React.useState(false);
 
 
     return (
-        <div style={{
+        <div style={{...{
             userSelect: "none",
             width: "35px",
             height: "35px",
@@ -30,7 +31,7 @@ function Icon({
             transition: "background-color 0.2s",
             fontSize: "20px",
             color: hover ? hoverColor : color,
-        }}
+        },...style}}
             className="materialSymbols"
             onMouseOver={() => setHover(true)}
             onMouseOut={() => setHover(false)}
