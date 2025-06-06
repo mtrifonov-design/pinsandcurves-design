@@ -227,7 +227,8 @@ function SimpleCommittedNumberInput({
   };
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div style={{ position: "relative", display: "inline-block" }}
+    >
       {editing ? (
         <input
           ref={inputRef}
