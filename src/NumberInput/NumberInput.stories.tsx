@@ -23,7 +23,7 @@ function SimpleCommittedTextInputStory({width, height}: {width: string, height: 
   <StyleProvider>
     <SimpleCommittedTextInput 
     initialValue={number}  
-    onCommit={onCommit}
+    onChange={onCommit}
     //key={String(number)}
     max={360}
     min={0}

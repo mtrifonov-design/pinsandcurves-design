@@ -31,6 +31,7 @@ type NumInputProps = {
 function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
   const [value, setValue] = React.useState(props.initialValue);
   const keyRef = useRef<string>(String(props.initialValue));
+  console.log("SimpleCommittedNumberInputWrapper", props.initialValue, value, keyRef.current);
   if (props.initialValue !== value) {
     // Initial value changed externally
     keyRef.current = props.initialValue.toString();
@@ -38,8 +39,7 @@ function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
   return <SimpleCommittedNumberInput
     {...props}
     key={keyRef.current}
-    value={value}
-    setValue={setValue}
+    setExternalValue={setValue}
   />
 
 }
@@ -64,9 +64,8 @@ function SimpleCommittedNumberInput({
   invalidInputColor = "var(--gray2)",
   charSize,
   maxCharSize = 50,
-  value,
-  setValue,
-}: NumInputProps & { value: number; setValue: (n: number) => void }) {
+  setExternalValue,
+}: NumInputProps & { setExternalValue: (n: number) => void }) {
   /* helpers ------------------------------------------------------------- */
   const decimals = React.useMemo(() => {
     if (step == null) return 6;
@@ -104,8 +103,8 @@ function SimpleCommittedNumberInput({
   );
   const draggingRef = React.useRef(false);
 
-  //const [value, setVal] = React.useState<number>(initialValue);
-  const setVal = setValue;
+  const [value, setVal] = React.useState<number>(initialValue);
+  
   const [display, setDisplayState] = React.useState<string>(String(initialValue));
   const [editing, setEditing] = React.useState(false);
   const [dragging, setDragging] = React.useState(false);
@@ -122,8 +121,10 @@ function SimpleCommittedNumberInput({
   };
 
   /* callbacks ----------------------------------------------------------- */
-  const push = (n: number, committed: boolean) =>
-    committed && onCommit ? onCommit(n) : onChange?.(n);
+  const push = (n: number, committed: boolean) => {
+    setExternalValue(n);
+    return committed && onCommit ? onCommit(n) : onChange?.(n)
+  };
 
   const endDrag = () => {
     setDragging(false);
