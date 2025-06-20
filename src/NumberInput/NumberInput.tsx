@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 
 const DEFAULT_PX_FOR_FULL_RANGE = 120;
 const DEFAULT_HOVER_SCALE = 1.8;
@@ -27,6 +27,24 @@ type NumInputProps = {
   maxCharSize?: number;
 };
 
+
+function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
+  const [value, setValue] = React.useState(props.initialValue);
+  const keyRef = useRef<string>(String(props.initialValue));
+  if (props.initialValue !== value) {
+    // Initial value changed externally
+    keyRef.current = props.initialValue.toString();
+  }
+  return <SimpleCommittedNumberInput
+    {...props}
+    key={keyRef.current}
+    value={value}
+    setValue={setValue}
+  />
+
+}
+
+
 function SimpleCommittedNumberInput({
   onCommit,
   onChange,
@@ -46,7 +64,9 @@ function SimpleCommittedNumberInput({
   invalidInputColor = "var(--gray2)",
   charSize,
   maxCharSize = 50,
-}: NumInputProps) {
+  value,
+  setValue,
+}: NumInputProps & { value: number; setValue: (n: number) => void }) {
   /* helpers ------------------------------------------------------------- */
   const decimals = React.useMemo(() => {
     if (step == null) return 6;
@@ -84,7 +104,8 @@ function SimpleCommittedNumberInput({
   );
   const draggingRef = React.useRef(false);
 
-  const [value, setVal] = React.useState<number>(initialValue);
+  //const [value, setVal] = React.useState<number>(initialValue);
+  const setVal = setValue;
   const [display, setDisplayState] = React.useState<string>(String(initialValue));
   const [editing, setEditing] = React.useState(false);
   const [dragging, setDragging] = React.useState(false);
@@ -275,4 +296,4 @@ function SimpleCommittedNumberInput({
   );
 }
 
-export default SimpleCommittedNumberInput;
+export default SimpleCommittedNumberInputWrapper;
