@@ -29,17 +29,18 @@ type NumInputProps = {
 
 
 function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
-  const [value, setValue] = React.useState(props.initialValue);
+  const valueRef = useRef<string>(String(props.initialValue));
   const keyRef = useRef<string>(String(props.initialValue));
-  console.log("SimpleCommittedNumberInputWrapper", props.initialValue, value, keyRef.current);
-  if (props.initialValue !== value) {
+  const value = valueRef.current;
+  //console.log("SimpleCommittedNumberInputWrapper", props.initialValue, value, keyRef.current);
+  if (String(props.initialValue) !== value) {
     // Initial value changed externally
-    keyRef.current = props.initialValue.toString();
+    keyRef.current = String(props.initialValue);
   }
   return <SimpleCommittedNumberInput
     {...props}
     key={keyRef.current}
-    setExternalValue={setValue}
+    setExternalValue={v => valueRef.current = String(v)}
   />
 
 }
@@ -84,7 +85,7 @@ function SimpleCommittedNumberInput({
   const inRange = (x: number) =>
     (min == null || x >= min) && (max == null || x <= max);
 
-  const isValid = (x: number) => !Number.isNaN(x) && aligned(x) && inRange(x);
+  const isValid = (x: number) => !Number.isNaN(x) && inRange(x);
 
   const pxPerStep = React.useMemo(() => {
     if (step == null) return 5;
@@ -115,15 +116,25 @@ function SimpleCommittedNumberInput({
   );
 
   const displayRef = React.useRef(display);
-    const setDisplay = (s: string) => {
+  const setDisplay = (s: string) => {
     setDisplayState(s);
     displayRef.current = s;
   };
 
   /* callbacks ----------------------------------------------------------- */
   const push = (n: number, committed: boolean) => {
-    setExternalValue(n);
-    return committed && onCommit ? onCommit(n) : onChange?.(n)
+    if (committed) {
+      setExternalValue(n);
+      return onCommit ? onCommit(n) : onChange?.(n);
+    } else {
+      // not committed, we update only if we arent in editing mode
+      if (editing) return;
+      setExternalValue(n);
+      onChange?.(n);
+    }
+
+    // setExternalValue(n);
+    // return committed && onCommit ? onCommit(n) : onChange?.(n)
   };
 
   const endDrag = () => {
@@ -225,6 +236,7 @@ function SimpleCommittedNumberInput({
   const down = (e: React.MouseEvent<HTMLDivElement>) => {
     /* only when not editing */
     if (editing) return;
+    e.preventDefault();
     startPtr.current = { x: e.clientX, y: e.clientY, base: value };
     draggingRef.current = false;
     window.addEventListener("mousemove", move);
