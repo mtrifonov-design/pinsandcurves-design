@@ -44,14 +44,14 @@ export default [
       //   // modules: true, // Enables CSS modules
       //   extract: true, // Optional: Extracts CSS to a separate file
       //   // minimize: true, // Optional: Minimize CSS
-      //   plugins: [
-      //     postcssurl({
-      //       url: 'copy', // Copies assets to the output folder
-      //       //basePath: 'assets', // Base path for the assets
-      //       assetsPath: 'assets', // Directory for assets
-      //       useHash: true, // Generates a hash for the file names to avoid cache issues
-      //     }),
-      //   ],
+      //   // plugins: [
+      //   //   postcssurl({
+      //   //     url: 'copy', // Copies assets to the output folder
+      //   //     //basePath: 'assets', // Base path for the assets
+      //   //     assetsPath: 'assets', // Directory for assets
+      //   //     useHash: true, // Generates a hash for the file names to avoid cache issues
+      //   //   }),
+      //   // ],
       // }
       ),
       terser({
