@@ -7,10 +7,11 @@ interface CollapsibleSectionProps {
   title: string;
   children: React.ReactNode;
   iconName?: string;
+  defaultOpen?: boolean;
 }
 
-export default function CollapsibleSection({ title, children, iconName }: CollapsibleSectionProps) {
-  const [open, setOpen] = React.useState(false);
+export default function CollapsibleSection({ title, children, iconName, defaultOpen }: CollapsibleSectionProps) {
+  const [open, setOpen] = React.useState(defaultOpen ?? false);
 
   return (
     <div className={`collapsible-section${open ? '' : ' closed'}`}>

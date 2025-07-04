@@ -23,6 +23,7 @@ function CollapsibleSectionStory({width, height}: {width: string, height: string
   <StyleProvider>
     <CollapsibleSection
       title="Collapsible Section"
+      defaultOpen={true}
     >
       Test Content
       </CollapsibleSection>
