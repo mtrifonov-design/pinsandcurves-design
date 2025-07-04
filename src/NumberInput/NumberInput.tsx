@@ -29,10 +29,10 @@ type NumInputProps = {
 
 
 function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
-  const valueRef = useRef<string>(String(props.initialValue));
+  const valueQueueRef = useRef<string[]>([String(props.initialValue)]);
   const keyRef = useRef<string>(String(props.initialValue));
-  const value = valueRef.current;
-  //console.log("SimpleCommittedNumberInputWrapper", props.initialValue, value, keyRef.current);
+  const valueQueue = valueQueueRef.current;
+  
   if (String(props.initialValue) !== value) {
     // Initial value changed externally
     keyRef.current = String(props.initialValue);
@@ -40,7 +40,7 @@ function SimpleCommittedNumberInputWrapper(props: NumInputProps) {
   return <SimpleCommittedNumberInput
     {...props}
     key={keyRef.current}
-    setExternalValue={v => valueRef.current = String(v)}
+    setExternalValue={v => valueQueueRef.current.push(String(v))}
   />
 
 }
@@ -254,7 +254,7 @@ function SimpleCommittedNumberInput({
     minWidth: "100px",
     fontSize: "16px",
     border: "none",
-    cursor: dragging ? "ns-resize" : "text",
+    cursor: editing? "text" : "ns-resize",
     userSelect: "none",
     transition: "background-color 0.1s",
     display: "inline-block",
