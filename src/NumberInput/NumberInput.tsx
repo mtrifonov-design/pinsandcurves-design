@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
+import {createPortal} from "react-dom";
 
 const DEFAULT_PX_FOR_FULL_RANGE = 150;
 const DEFAULT_HOVER_SCALE = 1.8;
@@ -135,6 +136,8 @@ function InactiveNumberInput(props :NumInputProps & {
         color: rest.color || "var(--gray7)",
         cursor: "ns-resize",
         width: "10ch",
+        height: "2em",
+        userSelect: "none",
       }}
       onPointerDown={down}
       onPointerMove={move}
@@ -207,19 +210,18 @@ function EditingNumberInput(props: NumInputProps & {
         border: "1px solid",
         borderColor: validInput ? (rest.color || "var(--gray7)") : (rest.invalidInputColor || "var(--danger)"),
         width: "10ch",
+        height: "2em",
       }}
     />
   );
 }
 
-function DraggingNumberInput(props: NumInputProps & {
-  value: number;
+function ProgressDisplayPortal(props: { top: number, left: number, value: number,
   setValue: (n: number) => void;
-  setInactive: () => void;
-}) {
+  setInactive: () => void; } & NumInputProps) {
   const { value, setValue, setInactive, ...rest } = props;
 
-  const captureRef = React.useRef<HTMLDivElement>(null);
+  const ref = React.useRef<HTMLDivElement>(null);
   const startPositionRef = React.useRef<null | {x: number,y:number}>(null);
   const startValue = React.useRef(value).current;
 
@@ -250,14 +252,18 @@ function DraggingNumberInput(props: NumInputProps & {
   }
 
   useEffect(()=>{
+    console.log("DraggingNumberInput useEffect called");
     const up = (e: PointerEvent) => {
-      if (captureRef.current) {
-        captureRef.current.releasePointerCapture(e.pointerId);
+      if (ref.current) {
+        ref.current.releasePointerCapture(e.pointerId);
       } else {
         console.warn("captureRef.current is null, cannot release pointer capture");
       }
 
-      if (startPositionRef.current === null) return;
+      if (startPositionRef.current === null) {
+        setInactive();
+        return;
+      };
       const currentPosition = { x: e.clientX, y: e.clientY };
       const newVal = computeNewValue(startPositionRef.current, currentPosition);
       setValue(newVal);
@@ -271,14 +277,13 @@ function DraggingNumberInput(props: NumInputProps & {
 
     }
     const move = (e: PointerEvent) => {
-      // capture the pointer move event
       if (startPositionRef.current === null) {
 
         console.log("startPosition is null, setting it now",{ x: e.clientX, y: e.clientY });
         startPositionRef.current = ({ x: e.clientX, y: e.clientY });
         const pointer = e.pointerId;
-        if (captureRef.current) {
-          captureRef.current.setPointerCapture(pointer);
+        if (ref.current) {
+          ref.current.setPointerCapture(pointer);
         } else {
           console.warn("captureRef.current is null, cannot set pointer capture");
         }
@@ -286,14 +291,13 @@ function DraggingNumberInput(props: NumInputProps & {
       } else {
         const currentPosition = { x: e.clientX, y: e.clientY };
         const newVal = computeNewValue(startPositionRef.current, currentPosition);
-        console.log("newVal", newVal);
         setValue(newVal);
         if (rest.onChange) {
           rest.onChange(newVal);
         }
       }
     }
-    const capture = captureRef.current;
+    const capture = ref.current;
     if (!capture) return;
     capture.addEventListener("pointerup", up);
     capture.addEventListener("pointermove", move);
@@ -302,7 +306,92 @@ function DraggingNumberInput(props: NumInputProps & {
       capture.removeEventListener("pointerup", up);
 
     }
-  },[])
+  },[ref.current])
+
+  return createPortal(
+      <div 
+      ref={ref}
+      style={{
+
+        borderRadius: "25px",
+        backgroundColor: rest.bgColor || "var(--gray3)",
+        color: rest.color || "var(--gray7)",
+        cursor: "ns-resize",
+        height: `${DEFAULT_PX_FOR_FULL_RANGE}px`,
+        position: "absolute",
+        top: `calc(${rest.top}px + calc(1em - ${DEFAULT_PX_FOR_FULL_RANGE / 2}px))`,
+        left: rest.left,
+        width: "10ch",
+        //filter: "blur(2px)",
+        boxShadow: `0 0 15px rgba(0,0,0,0.3)`,
+        //border: `1px solid ${rest.color || "var(--gray7)"}`,
+        overflow:"hidden",
+      }}>
+        <div style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          boxShadow: `inset 0 0 3px ${rest.color || "var(--gray7)"}`,
+          borderRadius: "25px",
+          opacity: 0.3,
+        }}>
+                </div>
+        <div style={{
+          position: "absolute",
+          //backgroundColor: rest.color || "var(--gray7)",
+          // gradient: "linear-gradient(to top, rgba(0,0,0,0.1), transparent)",
+          background: `linear-gradient(to top, transparent -20%, ${rest.color || "var(--gray7)"} 100%)`,
+          opacity: 0.5,
+          width: "100%",
+          height: `${DEFAULT_PX_FOR_FULL_RANGE * percent}px`,
+          bottom: 0,
+          left: 0,
+          //filter: "blur(2px)",
+        }}>
+        </div>
+              <div style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: `translate(-50%, -50%) scale(${rest.hoverScale || DEFAULT_HOVER_SCALE})`,
+        transformOrigin: "center",
+        color: rest.hoverColor || "var(--gray7)",
+        textShadow:  "0 0px 8px rgba(0,0,0,0.35)",
+        fontWeight: 500,
+        pointerEvents: "none",
+        userSelect: "none",
+      }}>
+        {value}
+      </div>
+
+      </div>,document.body)
+}
+
+
+function DraggingNumberInput(props: NumInputProps & {
+  value: number;
+  setValue: (n: number) => void;
+  setInactive: () => void;
+}) {
+
+    const { value, setValue, setInactive, ...rest } = props;
+
+  const captureRef = React.useRef<HTMLDivElement>(null);
+  const [portalPos,setPortalPos] = useState<{top: number, left: number}>({top: 0, left: 0});
+  useLayoutEffect(() => {
+    if (captureRef.current) {
+      const rect = captureRef.current.getBoundingClientRect();
+      //console.log("Bounding rect:", rect);
+      setPortalPos({
+        top: rect.top,
+        left: rect.left,
+      });
+    } else {
+      console.warn("captureRef.current is null, cannot get bounding rect");
+    }
+  }, [captureRef.current]); 
+
+
 
   return (
     <div 
@@ -318,54 +407,12 @@ function DraggingNumberInput(props: NumInputProps & {
         position: "relative",
     }}
     >
-      <div style={{
-        borderRadius: "25px",
-        backgroundColor: rest.bgColor || "var(--gray3)",
-        color: rest.color || "var(--gray7)",
-        cursor: "ns-resize",
-        width: "100%",
-        height: `${DEFAULT_PX_FOR_FULL_RANGE}px`,
-        position: "absolute",
-        top: `calc(1em - ${DEFAULT_PX_FOR_FULL_RANGE / 2}px)`,
-        left: 0,
-        //filter: "blur(2px)",
-        boxShadow: "0 0 20px rgba(0,0,0,0.1)",
-        overflow:"hidden",
-
-      }}>
-        <div style={{
-          position: "absolute",
-          //backgroundColor: rest.color || "var(--gray7)",
-          // gradient: "linear-gradient(to top, rgba(0,0,0,0.1), transparent)",
-          background: `linear-gradient(to top, transparent -20%, ${rest.color || "var(--gray7)"} 100%)`,
-          opacity: 0.5,
-          width: "100%",
-          height: `${DEFAULT_PX_FOR_FULL_RANGE * percent}px`,
-          bottom: 0,
-          left: 0,
-          //filter: "blur(2px)",
-        }}>
-
-        </div>
-
-
-      </div>
-      <div style={{
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        transform: `translate(-50%, -50%) scale(${rest.hoverScale || DEFAULT_HOVER_SCALE})`,
-        transformOrigin: "center",
-        color: rest.hoverColor || "var(--gray7)",
-        textShadow:  "0 0px 8px rgba(0,0,0,0.35)",
-        fontWeight: 500,
-        pointerEvents: "none",
-        userSelect: "none",
-      }}>
-        {value}
-      </div>
-
-
+      <ProgressDisplayPortal 
+        top={portalPos.top}
+        left={portalPos.left}
+        {...props}
+        value={value}
+      />
     </div>
   )
 

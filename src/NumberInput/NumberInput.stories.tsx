@@ -19,8 +19,12 @@ function SimpleCommittedTextInputStory({width, height}: {width: string, height: 
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    
   }}> 
   <StyleProvider>
+    <div style={{
+      marginLeft: "200px",
+    }}>
     <SimpleCommittedTextInput 
     initialValue={number}  
     onChange={onCommit}
@@ -29,7 +33,7 @@ function SimpleCommittedTextInputStory({width, height}: {width: string, height: 
     min={0}
     step={1}
     
-    />
+    /></div>
     <button onClick={()=> setNumber(n => n + 1)}>Increment</button>
   </StyleProvider>
 
