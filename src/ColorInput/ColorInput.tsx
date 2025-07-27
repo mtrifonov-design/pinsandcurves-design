@@ -41,7 +41,12 @@ function ColorInput(props: ColorInputProps) {
                 className={styles.Content}>
                     <div style={{
                     }}>
-                        <ColorInputCore />
+                        <ColorInputCore 
+                            colorMode='rgb'
+                            color={rgb}
+                            onChange={onChange}
+                            onCommit={onCommit}
+                        />
                     </div>
                     <Popover.Arrow className={styles.Arrow} />
                 </Popover.Content>

@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useState } from "react";
 import SimpleCommittedTextInput from "../SimpleCommittedTextInput/SimpleCommittedTextInput";
-import { hsvToRgb, rgbToHsv, rgbToHex, hexToRgb } from "./helpers";
+import { hsvToRgb, rgbToHsv, rgbToHex, hexToRgb, HSVColor, RGBColor } from "./helpers";
 
 function ColorCircle(p: { color: string, radius?: number }) {
     return (
@@ -34,18 +34,122 @@ const computeSVMatrix = (hue: number, width: number, height: number) => {
     return svMatrix;
 }
 
-function ColorInputFunctionality() {
-    const [hsv, setHsv] = useState({ h: 0, s: 0, v: 0 });
+function useHybridState(externalState: {h: number, s: number, v: number}) {
+  const [internalState, setInternalState] = useState<{h: number, s: number, v: number}>(externalState);
+  const [active, setActive] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!active) {
+      if (externalState !== internalState) {
+        setInternalState(externalState);
+      }
+    }
+  }, [externalState, active, internalState]);
+
+  const setValue = setInternalState;
+  const value = internalState;
+
+  return {
+    setValue,
+    value,
+    setActive,
+    active,
+  }
+}
+
+function ColorInputWrapper(p: {
+    colorMode: 'rgb' | 'hsv' | 'hex',
+    color: string | RGBColor | HSVColor,
+    onChange?: (color: string | RGBColor | HSVColor) => void,
+    onCommit?: (color: string | RGBColor | HSVColor) => void,
+}) {
+
+    const { colorMode, color, onChange, onCommit } = p;
+    let hsv;
+    if (colorMode === 'hex') {
+        const rgb = hexToRgb(color as string);
+        hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+    } else if (colorMode === 'rgb') {
+        hsv = rgbToHsv((color as RGBColor).r, (color as RGBColor).g, (color as RGBColor).b);
+    } else {
+        hsv = color as HSVColor;
+    }
+
+    const {
+        setValue: setInternalColor,
+        value: currentColor,
+        active,
+        setActive
+    } = useHybridState(hsv);
+
+    const setHsvChange = (newHsv: HSVColor) => {
+        setInternalColor(newHsv);
+        if (!onChange) return;
+        if (colorMode === 'hsv') {
+            onChange(newHsv);
+        } else if (colorMode === 'rgb') {
+            const rgb = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
+            onChange({ r: rgb.r, g: rgb.g, b: rgb.b });
+        } else if (colorMode === 'hex') {
+            const rgb = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
+            onChange(rgbToHex(rgb.r, rgb.g, rgb.b));
+        }
+    }
+
+    const setHsvCommit = (newHsv: HSVColor) => {
+        if (!onCommit) return;
+        if (colorMode === 'hsv') {
+            onCommit(newHsv);
+        } else if (colorMode === 'rgb') {
+            const rgb = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
+            onCommit({ r: rgb.r, g: rgb.g, b: rgb.b });
+        } else if (colorMode === 'hex') {
+            const rgb = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
+            onCommit(rgbToHex(rgb.r, rgb.g, rgb.b));
+        }
+    }
+
+    return <ColorInputFunctionality hsv={hsv} 
+    setHsvChange={setHsvChange} 
+    setDragging={setActive}
+    setHsvCommit={onCommit ? setHsvCommit : undefined}
+    />;
+
+};
+
+function ColorInputFunctionality(p: {
+    hsv: HSVColor,
+    setHsvChange: (hsv: HSVColor) => void,
+    setHsvCommit?: (hsv: HSVColor) => void,
+    setDragging: (dragging: boolean) => void,
+}) {
+    const { hsv, setHsvChange, setHsvCommit, setDragging } = p;
     const rgb = hsvToRgb(hsv.h, hsv.s, hsv.v);
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
     const hrgb = hsvToRgb(hsv.h, 1, 1);
     const hhex = rgbToHex(hrgb.r, hrgb.g, hrgb.b);
     const svMatrix = computeSVMatrix(hsv.h, 250, 250);
-    const handleHueChange = (newHue: number) => {
-        setHsv({ ...hsv, h: newHue });
+    const handleHueChange = (newHue: number, commit?: boolean) => {
+        if (commit && setHsvCommit) {
+            setHsvCommit({ ...hsv, h: newHue });
+        } else {
+            setHsvChange({ ...hsv, h: newHue });
+        }
     }
-    const handleSVChange = (newS: number, newV: number) => {
-        setHsv({ ...hsv, s: newS, v: newV });
+    const handleSVChange = (newS: number, newV: number, commit?: boolean) => {
+        const newHsv = { ...hsv, s: newS, v: newV };
+        if (commit && setHsvCommit) {
+            setHsvCommit(newHsv);
+        } else {
+            setHsvChange(newHsv);
+        }
+    }
+    const handleHSVChange = (newHsv: HSVColor, commit?: boolean) => {
+        if (commit && setHsvCommit) {
+            setHsvCommit(newHsv);
+        } else {
+            setHsvChange(newHsv);
+        }
     }
 
     return (
@@ -56,6 +160,8 @@ function ColorInputFunctionality() {
             rgb={rgb}
             onHueChange={handleHueChange}
             onSVChange={handleSVChange}
+            onHSVChange={handleHSVChange}
+            setDragging={setDragging}
         />
     );
 
@@ -66,11 +172,13 @@ function ColorInputCore(p: {
     hex: string,
     hhex: string,
     rgb: { r: number, g: number, b: number },
-    onHueChange: (newHue: number) => void,
-    onSVChange: (newS: number, newV: number) => void,
+    onHueChange: (newHue: number, commit?: boolean) => void,
+    onSVChange: (newS: number, newV: number, commit?: boolean) => void,
+    onHSVChange: (newHsv: { h: number, s: number, v: number }, commit?: boolean) => void,
+    setDragging: (dragging: boolean) => void,
 }) {
 
-    const { hsv, hex, hhex, rgb, onHueChange, onSVChange } = p;
+    const { hsv, hex, hhex, rgb, onHueChange, onSVChange, onHSVChange, setDragging } = p;
     const [selectorMoving, setSelectorMoving] = useState(false);
 
     const [svActive, setSvActive] = useState(false);
@@ -81,18 +189,21 @@ function ColorInputCore(p: {
 
     const sv_handleMouseDown = (e: React.MouseEvent) => {
         setSvActive(true);
+        setDragging(true);
         // pointer capture
         e.currentTarget.setPointerCapture(e.pointerId);
         document.body.style.cursor = 'move';
+
+    }
+    const sv_handleMouseUp = (e: React.MouseEvent) => {
+        setDragging(false);
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const s = clamp(x / rect.width, 0, 1);
         const v = clamp(1 - y / rect.height, 0, 1);
-        onSVChange(s, v);
-    }
-    const sv_handleMouseUp = (e: React.MouseEvent) => {
-        // release pointer capture
+        onSVChange(s, v, true);
+
         e.currentTarget.releasePointerCapture(e.pointerId);
         // reset cursor
         // @ts-ignore
@@ -107,8 +218,8 @@ function ColorInputCore(p: {
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const s = clamp(x / rect.width, 0, 1);
-        const v = clamp(1 - y / rect.height, 0, 1);
+        const s = clamp(x / rect.width, 0.01, 1);
+        const v = clamp(1 - y / rect.height, 0.01, 1);
         e.currentTarget.style.cursor= 'none';
         setSelectorMoving(true);
         onSVChange(s, v);
@@ -116,16 +227,20 @@ function ColorInputCore(p: {
 
     const [hueActive, setHueActive] = useState(false);
     const hue_handleMouseDown = (e: React.MouseEvent) => {
+        setDragging(true);
         setHueActive(true);
         // pointer capture
         e.currentTarget.setPointerCapture(e.pointerId);
         document.body.style.cursor = 'ew-resize';
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const hue = clamp(x / rect.width, 0, 1);
-        onHueChange(hue);
+
     }
     const hue_handleMouseUp = (e: React.MouseEvent) => {
+        setDragging(false);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hue = clamp(x / rect.width, 0, 0.99);
+        onHueChange(hue, true);
+
         setHueActive(false);
         // release pointer capture
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -137,7 +252,7 @@ function ColorInputCore(p: {
         if (!hueActive) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        const hue = clamp(x / rect.width, 0, 1);
+        const hue = clamp(x / rect.width, 0, 0.99);
         onHueChange(hue);
     }
 
@@ -299,8 +414,7 @@ function ColorInputCore(p: {
                     const [_, r, g, b] = match.map(Number);
                     if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) return;
                     const { h, s, v } = rgbToHsv(r, g, b);
-                    onHueChange(h);
-                    onSVChange(s, v);
+                    onHSVChange({ h, s, v }, true);
                 }}
                 isValid={(value) => {
                     const match = value.match(/^\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*$/);
@@ -315,8 +429,7 @@ function ColorInputCore(p: {
                 onCommit={(value) => {
                     const { r, g, b } = hexToRgb(value);
                     const { h, s, v } = rgbToHsv(r, g, b);
-                    onHueChange(h);
-                    onSVChange(s, v);
+                    onHSVChange({ h, s, v }, true);
                 }}
                 isValid={(value) => {
                     const { r, g, b } = hexToRgb(value);
@@ -327,4 +440,4 @@ function ColorInputCore(p: {
     </div>
 }
 
-export default ColorInputFunctionality;
+export default ColorInputWrapper;

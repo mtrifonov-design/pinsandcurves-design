@@ -6,6 +6,8 @@ import ColorInput from './ColorInput';
 
 
 function ColorInputStory({width, height}: {width: string, height: string}) {
+  const [color, setColor] = useState({ r: 255, g: 100, b: 0 });
+  
   return <div style={{
     width,
     height,
@@ -17,7 +19,9 @@ function ColorInputStory({width, height}: {width: string, height: string}) {
   <StyleProvider>
     <ColorInput
       colorMode='rgb'
-      color={{ r: 255, g: 100, b: 0 }}
+      color={color}
+      //onChange={setColor}
+      onCommit={setColor}
     />
     </StyleProvider>
     </div>
