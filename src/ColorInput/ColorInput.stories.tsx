@@ -1,11 +1,11 @@
 import React, { useState, useRef, useSyncExternalStore } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import ColorInputCore from './ColorInputCore';
 import StyleProvider from '../StyleProvider';
+import ColorInput from './ColorInput';
 
 
 
-function ColorInputCoreStory({width, height}: {width: string, height: string}) {
+function ColorInputStory({width, height}: {width: string, height: string}) {
   return <div style={{
     width,
     height,
@@ -15,18 +15,21 @@ function ColorInputCoreStory({width, height}: {width: string, height: string}) {
     alignItems: 'center',
   }}> 
   <StyleProvider>
-    <ColorInputCore />
+    <ColorInput
+      colorMode='rgb'
+      color={{ r: 255, g: 100, b: 0 }}
+    />
     </StyleProvider>
     </div>
 }
 
 const meta = {
-  title: 'StyleLibrary/ColorInput/ColorInputCore',
-  component: ColorInputCoreStory,
+  title: 'StyleLibrary/ColorInput/ColorInput',
+  component: ColorInputStory,
   parameters: {
     layout: 'centered',
   },
-} satisfies Meta<typeof ColorInputCoreStory>;
+} satisfies Meta<typeof ColorInputStory>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

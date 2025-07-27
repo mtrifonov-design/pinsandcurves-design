@@ -1,0 +1,14 @@
+
+.Content {
+    background-color: var(--gray2);
+    border: 2px solid var(--gray4);
+    padding: 16px;
+    border-radius: var(--borderRadiusSmall);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.Arrow {
+    fill: var(--gray4);
+    width: 16px;
+    height: 8px;
+}
