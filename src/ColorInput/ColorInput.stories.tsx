@@ -20,8 +20,8 @@ function ColorInputStory({width, height}: {width: string, height: string}) {
     <ColorInput
       colorMode='rgb'
       color={color}
-      //onChange={setColor}
-      onCommit={setColor}
+      onChange={setColor}
+      onCommit={(color) => {setColor(color); console.log('Color committed:', color);}}
     />
     </StyleProvider>
     </div>

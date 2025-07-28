@@ -39,12 +39,15 @@ function useHybridState(externalState: {h: number, s: number, v: number}) {
   const [active, setActive] = useState(false);
 
   useLayoutEffect(() => {
+    const neq = (a: {h: number, s: number, v: number}, b: {h: number, s: number, v: number}) => {
+      return a.h !== b.h || a.s !== b.s || a.v !== b.v;
+    }
     if (!active) {
-      if (externalState !== internalState) {
+      if (neq(internalState, externalState)) {
         setInternalState(externalState);
       }
     }
-  }, [externalState, active, internalState]);
+  }, [externalState]);
 
   const setValue = setInternalState;
   const value = internalState;
@@ -82,6 +85,8 @@ function ColorInputWrapper(p: {
         setActive
     } = useHybridState(hsv);
 
+    //console.log(currentColor);
+
     const setHsvChange = (newHsv: HSVColor) => {
         setInternalColor(newHsv);
         if (!onChange) return;
@@ -109,7 +114,8 @@ function ColorInputWrapper(p: {
         }
     }
 
-    return <ColorInputFunctionality hsv={hsv} 
+    return <ColorInputFunctionality 
+    hsv={currentColor} 
     setHsvChange={setHsvChange} 
     setDragging={setActive}
     setHsvCommit={onCommit ? setHsvCommit : undefined}

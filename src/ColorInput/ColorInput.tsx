@@ -10,12 +10,14 @@ type ColorInputProps = {
     colorMode?: 'rgb' | 'hsl' | 'hex';
     onChange?: (color: string | RGBColor | HSVColor) => void;
     onCommit?: (color: string | RGBColor | HSVColor) => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 
 function ColorInput(props: ColorInputProps) {
 
-    const { color, colorMode = 'hex', onChange, onCommit } = props;
+    const { color, colorMode = 'hex', onChange, onCommit, styleTrigger=null } = props;
 
     const rgb : RGBColor = colorMode === 'hex' ? hexToRgb(color as string) :
         colorMode === 'rgb' ? color as RGBColor :
@@ -23,7 +25,10 @@ function ColorInput(props: ColorInputProps) {
     
 
     return (
-        <Popover.Root>
+        <Popover.Root
+            open={props.open}
+            onOpenChange={props.onOpenChange}
+        >
             <Popover.Trigger asChild>
                 <div style={{
                     backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
@@ -32,7 +37,8 @@ function ColorInput(props: ColorInputProps) {
                     cursor: 'pointer',
                     border: '2px solid var(--gray6)',
                     boxShadow: 'inset 0 0 0 2px var(--gray1)',
-                    borderRadius: 'var(--borderRadiusSmall)'
+                    borderRadius: 'var(--borderRadiusSmall)',
+                    ...styleTrigger
                 }}></div>
             </Popover.Trigger>
             <Popover.Portal>

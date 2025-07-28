@@ -5,3 +5,5 @@ export { default as StyleProvider } from './StyleProvider';
 export { default as Logo } from './Logo';
 export { default as NumberInput } from './NumberInput/NumberInput';
 export { default as CollapsibleSection } from './CollapsibleSection/CollapsibleSection';
+export { default as ColorInput } from './ColorInput/ColorInput';
+export { default as GradientPicker } from './GradientPicker/GradientPicker';
