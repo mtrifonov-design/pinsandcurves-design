@@ -6,7 +6,7 @@ import ColorInput from './ColorInput';
 
 
 function ColorInputStory({width, height}: {width: string, height: string}) {
-  const [color, setColor] = useState({ r: 255, g: 100, b: 0 });
+  const [color, setColor] = useState({ r: 1, g: 0.39, b: 0 });
   
   return <div style={{
     width,

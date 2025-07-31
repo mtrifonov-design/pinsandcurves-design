@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useLayoutEffect } from "react";
 import ColorInput from "../ColorInput/ColorInput";
 import Icon from "../Icon/Icon";
 
@@ -141,10 +141,46 @@ function ColorStop(p: {
     </div>
 }
 
+function useHybridState(externalState: ColorStops) {
+  const [internalState, setInternalState] = useState<ColorStops>(externalState);
+
+  useLayoutEffect(() => {
+    const neq = (a: ColorStops, b: ColorStops) => {
+        if (a.length !== b.length) return true;
+        for (let i = 0; i < a.length; i++) {
+            if (a[i].id !== b[i].id || a[i].position !== b[i].position || a[i].color.r !== b[i].color.r || a[i].color.g !== b[i].color.g || a[i].color.b !== b[i].color.b) {
+            return true;
+            }
+        }
+        return false;
+    }
+      if (neq(internalState, externalState)) {
+        setInternalState(externalState);
+      }
+  }, [externalState]);
+
+  const setValue = setInternalState;
+  const value = internalState;
+
+  return {
+    setValue,
+    value,
+  }
+}
+
 function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProps) {
     //console.log(`linear-gradient(to right, ${stops.map(stop => `rgb(${stop.color.r}, ${stop.color.g}, ${stop.color.b}) ${stop.position * 100}%`).join(', ')},rgb(${stops[0].color.r}, ${stops[0].color.g}, ${stops[0].color.b}) 100%,)`)
 
+
+
+
     const [selectedStop, setSelectedStop] = useState<string | null>(null);
+
+    const {
+        value: internalStops,
+        setValue: setInternalStops,
+    } = useHybridState(stops);
+
 
     const getOnColorStopColorChange = (id: string) => {
         return (color: { r: number; g: number; b: number }, commit: boolean) => {
@@ -153,8 +189,10 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
             newStops[index] = { ...newStops[index], color };
             if (commit && onCommit) {
                 onCommit(newStops);
-            } else {
+            } else if (onChange) {
                 onChange?.(newStops);
+            } else {
+                setInternalStops(newStops);
             }
         }
     }
@@ -164,10 +202,13 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
             const newStops = [...stops];
             const index = newStops.findIndex(s => s.id === id);
             newStops[index] = { ...newStops[index], position };
+            newStops.sort((a, b) => a.position - b.position);
             if (commit && onCommit) {
                 onCommit(newStops);
-            } else {
+            } else if (onChange) {
                 onChange?.(newStops);
+            } else {
+                setInternalStops(newStops);
             }
         }
     }
@@ -179,8 +220,10 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
         setSelectedStop(null);
         if (onCommit) {
             onCommit(newStops);
-        } else {
+        } else if (onChange) {
             onChange?.(newStops);
+        } else {
+            setInternalStops(newStops);
         }
     }
 
@@ -190,16 +233,19 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
         let position = (e.clientX - rect.left) / rect.width;
         position = clamp(position, 0, 0.99);
         const newStop = {
-            color: { r: 255, g: 255, b: 255 },
+            color: { r: 1, g: 1, b: 1 },
             position,
             id: crypto.randomUUID()
         };
         const newStops = [...stops, newStop];
+        newStops.sort((a, b) => a.position - b.position);
         setSelectedStop(newStop.id);
         if (onCommit) {
             onCommit(newStops);
-        } else {
+        } else if (onChange) {
             onChange?.(newStops);
+        } else {
+            setInternalStops(newStops);
         }
     }
 
@@ -214,14 +260,15 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
             justifyContent: 'center',
             alignItems: 'center',
             gap: '10px',
+            width: '100%',
         }}>
             <div style={{
-                width: '200px',
                 height: '50px',
+                width: '100%',
                 borderRadius: 'var(--borderRadiusSmall)',
                 boxShadow: 'inset 0 0 0 2px var(--gray2)',
                 border: '2px solid var(--gray5)',
-                background: `linear-gradient(to right, ${orderedStops.map(stop => `rgb(${stop.color.r}, ${stop.color.g}, ${stop.color.b}) ${stop.position * 100}%`).join(', ')},rgb(${orderedStops[0].color.r}, ${orderedStops[0].color.g}, ${orderedStops[0].color.b}) 100%)`,
+                background: `linear-gradient(to right, ${orderedStops.map(stop => `rgb(${Math.round(stop.color.r * 255)}, ${Math.round(stop.color.g * 255)}, ${Math.round(stop.color.b * 255)}) ${stop.position * 100}%`).join(', ')},rgb(${Math.round(orderedStops[0].color.r * 255)}, ${Math.round(orderedStops[0].color.g * 255)}, ${Math.round(orderedStops[0].color.b * 255)}) 100%)`,
                 position: 'relative',
                 cursor: 'crosshair'
             }}
@@ -243,7 +290,7 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
 
 
                 {/* Render color stops here */}
-                {stops.map((stop, index) => (
+                {internalStops.map((stop, index) => (
                     <ColorStop
                         key={stop.id} stop={stop}
                         onColorChange={getOnColorStopColorChange(stop.id)}
@@ -254,11 +301,13 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
                     />
                 ))}
             </div>
+            <div>
             <Icon iconName="delete" 
                 color={selectedStop ? 'var(--gray6)' : 'var(--gray3)'}
                 bgColor={selectedStop ? 'var(--gray3)' : 'transparent'}
                 onClick={deleteSelectedStop}
             />
+            </div>
         </div>
     );
 }

@@ -31,7 +31,7 @@ function ColorInput(props: ColorInputProps) {
         >
             <Popover.Trigger asChild>
                 <div style={{
-                    backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+                    backgroundColor: `rgb(${Math.round(rgb.r * 255)}, ${Math.round(rgb.g * 255)}, ${Math.round(rgb.b * 255)})`,
                     width: '35px',
                     height: '35px',
                     cursor: 'pointer',

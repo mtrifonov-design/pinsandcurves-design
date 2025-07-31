@@ -1,5 +1,5 @@
 import React from 'react';
-import './CollapsibleSection.css';
+import styles from './CollapsibleSection.modules.css';
 import { Icon } from '..'
 
 
@@ -14,12 +14,12 @@ export default function CollapsibleSection({ title, children, iconName, defaultO
   const [open, setOpen] = React.useState(defaultOpen ?? false);
 
   return (
-    <div className={`collapsible-section${open ? '' : ' closed'}`}>
+    <div className={`${styles.collapsibleSection} ${open ? '' : styles.collapsibleSectionClosed}`}>
       <div
-        className="collapsible-header"
+        className={styles.collapsibleHeader}
         onClick={() => setOpen(o => !o)}
       >
-        <span className="collapsible-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span className={styles.collapsibleTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {iconName ? <Icon iconName={iconName} 
             hoverBgColor='transparent'
             hoverColor='var(--gray6)'
@@ -27,14 +27,14 @@ export default function CollapsibleSection({ title, children, iconName, defaultO
           
         
         {title}</span>
-        <span className={`materialSymbols collapsible-arrow${open ? ' open' : ''}`}>
+        <span className={`materialSymbols ${styles.collapsibleArrow} ${open ? '' : styles.collapsibleArrowClosed}`}>
           arrow_drop_down
         </span>
       </div>
-      <div className={`collapsible-content${open ? '' : ' closed'}`}
+      <div className={`${styles.collapsibleContent} ${open ? '' : styles.collapsibleContentClosed}`}
         style={{ maxHeight: open ? 'none' : 0 }}
       >
-        <div className={`collapsible-inner${open ? '' : ' closed'}`}>
+        <div className={`${styles.collapsibleInner} ${open ? '' : styles.collapsibleInnerClosed}`}>
           {children}
         </div>
       </div>
