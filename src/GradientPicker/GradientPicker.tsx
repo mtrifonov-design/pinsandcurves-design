@@ -1,4 +1,4 @@
-import React, { useRef, useState, useLayoutEffect } from "react";
+import React, { useRef, useState, useLayoutEffect, useEffect } from "react";
 import ColorInput from "../ColorInput/ColorInput";
 import Icon from "../Icon/Icon";
 
@@ -30,58 +30,68 @@ function ColorStop(p: {
 }) {
     const colorStopRef = useRef<HTMLDivElement>(null);
     const { stop, onColorChange, onPositionChange, gradientContainerRef, isSelected, onSelect } = p;
-    const [dragging, setDragging] = useState(false);
-    const [colorMenuOpen, setColorMenuOpenRaw] = useState(false);
-    const setColorMenuOpen = (open: boolean) => {
-        console.log('setColorMenuOpen', open);
-        setColorMenuOpenRaw(open);
-    };
+    const [colorMenuOpen, setColorMenuOpen] = useState(false);
     const [pointerDown, setPointerDown] = useState(false);
     const [startXY, setXY] = useState({ x: 0, y: 0 });
-    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (colorMenuOpen) return;
-        setXY({ x: e.clientX, y: e.clientY });
-        setPointerDown(true);
-        // set pointer capture
-        if (colorStopRef.current === null) return;
-        colorStopRef.current.setPointerCapture(e.pointerId);
-    };
 
-    const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (gradientContainerRef.current === null) return;
-        if (!dragging && pointerDown) {
-            const xy = { x: e.clientX, y: e.clientY };
-            const dx = xy.x - startXY.x;
-            const dy = xy.y - startXY.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const threshold = 5;
-            if (dist > threshold) {
-                setDragging(true);
+    useEffect(() => {
+        let dragging = false;
+        const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+            if (gradientContainerRef.current === null) return;
+            if (colorMenuOpen) return;
+            if (!dragging) {
+                const xy = { x: e.clientX, y: e.clientY };
+                const dx = xy.x - startXY.x;
+                const dy = xy.y - startXY.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const threshold = 5;
+                if (dist > threshold) {
+                    dragging = true;
+                    onSelect();
+                }
+            } else {
+                const rect = gradientContainerRef.current.getBoundingClientRect();
+                let position = (e.clientX - rect.left) / rect.width;
+                position = clamp(position, 0, 0.99);
+                onPositionChange(position, false);
+            }
+
+        };
+        const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+            if (gradientContainerRef.current === null) return;
+            if (dragging) {
+                const rect = gradientContainerRef.current.getBoundingClientRect();
+                let position = (e.clientX - rect.left) / rect.width;
+                position = clamp(position, 0, 0.99);
+                onPositionChange(position, true);
+            } else if (!colorMenuOpen) {
+                setColorMenuOpen(true);
                 onSelect();
             }
-        } else if (dragging) {
-            const rect = gradientContainerRef.current.getBoundingClientRect();
-            let position = (e.clientX - rect.left) / rect.width;
-            position = clamp(position, 0, 0.99);
-            onPositionChange(position, false);
+            setXY({ x: 0, y: 0 });
+            if (dragging) {
+                dragging = false;
+            }
+            setPointerDown(false);
+        };
+        if (pointerDown) {
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
         }
+        return () => {
+            if (pointerDown) {
+                window.removeEventListener('pointermove', handlePointerMove);
+                window.removeEventListener('pointerup', handlePointerUp);
+            }
+        }
+
+    }, [pointerDown]);
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        setXY({ x: e.clientX, y: e.clientY });
+        setPointerDown(true);
     };
 
-    const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (colorMenuOpen) return;
-        if (dragging) {
-            setDragging(false);
-            onPositionChange(stop.position, true);
-        }
-        setXY({ x: 0, y: 0 });
-        setPointerDown(false);
-        if (colorStopRef.current === null) return;
-        colorStopRef.current.releasePointerCapture(e.pointerId);
-        if (!dragging) {
-            setColorMenuOpen(!colorMenuOpen);
-            onSelect();
-        }
-    };
 
     return <div style={{
         position: 'absolute',
@@ -92,10 +102,10 @@ function ColorStop(p: {
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: 'column',
+        cursor: 'pointer',
+        zIndex: isSelected ? 10 : 1,
     }}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
         ref={colorStopRef}
     >
         <div style={{
@@ -122,58 +132,58 @@ function ColorStop(p: {
             }}></div>
         </div>
 
-        <ColorInput
-            color={{ r: stop.color.r, g: stop.color.g, b: stop.color.b }}
-            colorMode='rgb'
-            onChange={(color) => {
-                onColorChange(color as { r: number; g: number; b: number }, false);
-            }}
-            onCommit={(color) => {
-                onColorChange(color as { r: number; g: number; b: number }, true);
-            }}
-            open={colorMenuOpen}
-            onOpenChange={setColorMenuOpen}
-            styleTrigger={{
-                border: isSelected ? '2px solid var(--gray8)' : '2px solid var(--gray6)',
-            }}
-        />
+        <div style={{
+            pointerEvents: 'none',
+        }}>
+            <ColorInput
+                color={{ r: stop.color.r, g: stop.color.g, b: stop.color.b }}
+                colorMode='rgb'
+                onChange={(color) => {
+                    onColorChange(color as { r: number; g: number; b: number }, false);
+                }}
+                onCommit={(color) => {
+                    onColorChange(color as { r: number; g: number; b: number }, true);
+                }}
+                open={colorMenuOpen}
+                onOpenChange={setColorMenuOpen}
+                styleTrigger={{
+                    border: isSelected ? '2px solid var(--gray8)' : '2px solid var(--gray6)',
+                }}
+            />
+        </div>
+
 
     </div>
 }
 
 function useHybridState(externalState: ColorStops) {
-  const [internalState, setInternalState] = useState<ColorStops>(externalState);
+    const [internalState, setInternalState] = useState<ColorStops>(externalState);
 
-  useLayoutEffect(() => {
-    const neq = (a: ColorStops, b: ColorStops) => {
-        if (a.length !== b.length) return true;
-        for (let i = 0; i < a.length; i++) {
-            if (a[i].id !== b[i].id || a[i].position !== b[i].position || a[i].color.r !== b[i].color.r || a[i].color.g !== b[i].color.g || a[i].color.b !== b[i].color.b) {
-            return true;
+    useLayoutEffect(() => {
+        const neq = (a: ColorStops, b: ColorStops) => {
+            if (a.length !== b.length) return true;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i].id !== b[i].id || a[i].position !== b[i].position || a[i].color.r !== b[i].color.r || a[i].color.g !== b[i].color.g || a[i].color.b !== b[i].color.b) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        if (neq(internalState, externalState)) {
+            setInternalState(externalState);
+        }
+    }, [externalState]);
+
+    const setValue = setInternalState;
+    const value = internalState;
+
+    return {
+        setValue,
+        value,
     }
-      if (neq(internalState, externalState)) {
-        setInternalState(externalState);
-      }
-  }, [externalState]);
-
-  const setValue = setInternalState;
-  const value = internalState;
-
-  return {
-    setValue,
-    value,
-  }
 }
 
 function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProps) {
-    //console.log(`linear-gradient(to right, ${stops.map(stop => `rgb(${stop.color.r}, ${stop.color.g}, ${stop.color.b}) ${stop.position * 100}%`).join(', ')},rgb(${stops[0].color.r}, ${stops[0].color.g}, ${stops[0].color.b}) 100%,)`)
-
-
-
-
     const [selectedStop, setSelectedStop] = useState<string | null>(null);
 
     const {
@@ -273,8 +283,6 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
                 cursor: 'crosshair'
             }}
                 ref={gradientContainerRef}
-
-
             >
                 <div style={{
                     position: 'absolute',
@@ -292,7 +300,8 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
                 {/* Render color stops here */}
                 {internalStops.map((stop, index) => (
                     <ColorStop
-                        key={stop.id} stop={stop}
+                        key={stop.id}
+                        stop={stop}
                         onColorChange={getOnColorStopColorChange(stop.id)}
                         onPositionChange={getOnColorStopPositionChange(stop.id)}
                         gradientContainerRef={gradientContainerRef}
@@ -302,11 +311,11 @@ function GradientPicker({ stops, onChange, onCommit, style }: GradientPickerProp
                 ))}
             </div>
             <div>
-            <Icon iconName="delete" 
-                color={selectedStop ? 'var(--gray6)' : 'var(--gray3)'}
-                bgColor={selectedStop ? 'var(--gray3)' : 'transparent'}
-                onClick={deleteSelectedStop}
-            />
+                <Icon iconName="delete"
+                    color={selectedStop ? 'var(--gray8)' : 'var(--gray3)'}
+                    bgColor={selectedStop ? 'var(--gray4)' : 'transparent'}
+                    onClick={deleteSelectedStop}
+                />
             </div>
         </div>
     );

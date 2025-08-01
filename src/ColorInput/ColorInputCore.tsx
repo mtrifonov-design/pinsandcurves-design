@@ -352,7 +352,10 @@ function ColorInputCore(p: {
                     let [_, r, g, b] = match.map(Number);
                     r /= 255; g /= 255; b /= 255;
                     if (r < 0 || r > 1 || g < 0 || g > 1 || b < 0 || b > 1) return;
-                    const { h, s, v } = rgbToHsv({ r, g, b });
+                    let { h, s, v } = rgbToHsv({ r, g, b });
+                    if (!h) h = hsv.h;
+                    if (!s) s = hsv.s;
+                    if (!v) v = hsv.v;
                     onHSVChange({ h, s, v }, true);
                 }}
                 isValid={(value) => {
@@ -367,7 +370,10 @@ function ColorInputCore(p: {
                 initialValue={rgbToHex(hsvToRgb(hsv))}
                 onCommit={(value) => {
                     const { r, g, b } = hexToRgb(value);
-                    const { h, s, v } = rgbToHsv({ r, g, b });
+                    let { h, s, v } = rgbToHsv({ r, g, b });
+                    if (!h) h = hsv.h;
+                    if (!s) s = hsv.s;
+                    if (!v) v = hsv.v;
                     onHSVChange({ h, s, v }, true);
                 }}
                 isValid={(value) => {
