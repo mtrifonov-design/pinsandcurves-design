@@ -8,9 +8,10 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   iconName?: string;
   defaultOpen?: boolean;
+  titleStyle?: React.CSSProperties;
 }
 
-export default function CollapsibleSection({ title, children, iconName, defaultOpen }: CollapsibleSectionProps) {
+export default function CollapsibleSection({ title, children, iconName, defaultOpen, titleStyle }: CollapsibleSectionProps) {
   const [open, setOpen] = React.useState(defaultOpen ?? false);
 
   return (
@@ -19,7 +20,12 @@ export default function CollapsibleSection({ title, children, iconName, defaultO
         className={styles.collapsibleHeader}
         onClick={() => setOpen(o => !o)}
       >
-        <span className={styles.collapsibleTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span className={styles.collapsibleTitle} 
+        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem',
+          ...titleStyle
+         }}
+        
+        >
           {iconName ? <Icon iconName={iconName} 
             hoverBgColor='transparent'
             hoverColor='var(--gray6)'
@@ -27,7 +33,7 @@ export default function CollapsibleSection({ title, children, iconName, defaultO
           
         
         {title}</span>
-        <span className={`materialSymbols ${styles.collapsibleArrow} ${open ? '' : styles.collapsibleArrowClosed}`}>
+        <span className={`materialSymbols ${styles.collapsibleArrow} ${open ?  styles.collapsibleArrowOpen : ''}`}>
           arrow_drop_down
         </span>
       </div>
