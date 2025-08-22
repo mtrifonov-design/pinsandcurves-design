@@ -59,6 +59,11 @@ export default [
       terser({
         keep_fnames: true,
       }),
+      copy({
+      targets: [
+        { src: 'src/PinsAndCurvesStylesheet.css', dest: 'dist/' },
+      ]
+    })
     ],
     // external: ["react", "react-dom"],
   },
